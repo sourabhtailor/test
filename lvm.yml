@@ -1,0 +1,46 @@
+---
+  - name: create lvm
+    hosts: all
+    tasks:
+      - name: create vg
+        lvg:
+          vg: myvg
+          pvs: /dev/sdc
+          pesize: 32
+      - name: create lv
+        lvol:
+          vg: myvg
+          lv: lv01
+          pvs: /dev/sdc
+          size: 64
+          force: true
+      - name: create lv02
+        lvol:
+          vg: myvg
+          pvs: /dev/sdc
+          lv: lv02
+          size: 64
+          force: true
+      - name: format with filesystem
+        filesystem:
+             device: /dev/myvg/lv01 
+             fstype: ext4
+      - name: format filesystem
+        filesystem:
+              device: /dev/myvg/lv02
+              fstype: xfs
+      - name: mount lv01
+        mount:
+            path: /lv01
+            src: /dev/myvg/lv01
+            fstype: ext4
+            state: mounted
+            opts: defaults
+      - name: mount lv02
+        mount:
+            path: /lv02
+            src: /dev/myvg/lv02
+            state: mounted
+            opts: defaults 
+            fstype: xfs
+                   

@@ -1,0 +1,32 @@
+---
+  - name: create a user and a group with a array
+    hosts: all
+    vars_files:
+      - ./vars.yml
+    tasks:
+         - name: create user
+           user:
+               name: "{{ user.prod.user }}"
+               state: present
+           register: output
+         - debug:
+             var: output 
+         - name: create group
+           group:
+               name: "{{ user.prod.group }}"
+               state: present       
+           register: output
+         - debug: 
+                 var: output   
+         - name: create user for dev
+           user:
+                name: "{{ user.dev.user }}"
+                state: present
+           register: output
+         - debug:
+                var: output         
+                 
+         - name: craete group for dev
+           group:
+                 name: "{{ user.dev.user }}"      
+                 state: present
