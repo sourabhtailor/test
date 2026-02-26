@@ -1,11 +1,9 @@
-name: Duplicate ONLY prod PR to gov-prod
+name: Duplicate prod PR to gov-prod
 
 on:
   pull_request:
-    types:
-      - opened
-    branches:
-      - prod
+    types: [opened]
+    branches: [prod]
 
 permissions:
   contents: read
@@ -17,15 +15,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Create PR to gov-prod
+      - name: Create identical PR to gov-prod
         uses: actions/github-script@v7
         with:
           script: |
             const { owner, repo } = context.repo;
-            const headBranch = context.payload.pull_request.head.ref;
-            const baseBranch = "gov-prod";
 
-            const existing = await github.rest.pulls.list({
+            const originalPR = context.payload.pull_request;
+            const headBranch = originalPR.head.ref;
+            const baseBranch = "gov-prod";
+            const author = originalPR.user.login;
+
+            // Check if already exists
+            const { data: existing } = await github.rest.pulls.list({
               owner,
               repo,
               state: "open",
@@ -33,25 +35,27 @@ jobs:
               base: baseBranch
             });
 
-            if (existing.data.length > 0) {
+            if (existing.length > 0) {
               console.log("PR already exists for gov-prod.");
               return;
             }
 
-            const originalBody =
-              context.payload.pull_request.body || "No description provided.";
-
-            await github.rest.pulls.create({
+            // Create new PR with SAME title & SAME body
+            const newPR = await github.rest.pulls.create({
               owner,
               repo,
-              title: `${context.payload.pull_request.title}`,
+              title: originalPR.title,
               head: headBranch,
               base: baseBranch,
-              body:
-                "Auto-created from PR #" +
-                context.payload.pull_request.number +
-                "\n\nOriginal Description:\n\n" +
-                originalBody
+              body: originalPR.body || ""
             });
 
-            console.log("gov-prod PR created successfully.");
+            // Assign original author
+            await github.rest.issues.addAssignees({
+              owner,
+              repo,
+              issue_number: newPR.data.number,
+              assignees: [author]
+            });
+
+            console.log("gov-prod PR created with same data.");
