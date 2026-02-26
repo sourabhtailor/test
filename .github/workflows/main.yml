@@ -8,8 +8,8 @@ on:
 
 jobs:
   sync-to-gov-prod:
-    if: github.actor != 'github-actions[bot]' &&
-        github.event.pull_request.head.ref != 'gov-prod'
+    # if: github.actor != 'github-actions[bot]' &&
+    #     github.event.pull_request.head.ref != 'gov-prod'
     runs-on: ubuntu-latest
 
     permissions:
