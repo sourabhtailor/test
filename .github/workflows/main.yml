@@ -6,8 +6,8 @@ on:
       - prod
     types:
       - opened
-      - synchronize
       - reopened
+      - synchronize
 
 permissions:
   contents: write
@@ -15,10 +15,14 @@ permissions:
 
 jobs:
   duplicate-pr:
-   # if: github.event.pull_request.base.ref == 'prod'
     runs-on: ubuntu-latest
 
     steps:
+      # ✅ Step 1: Checkout repository (IMPORTANT)
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ✅ Step 2: Create PR to gov-prod
       - name: Create PR to gov-prod
         uses: peter-evans/create-pull-request@v6
         with:
@@ -27,9 +31,9 @@ jobs:
           branch: ${{ github.head_ref }}
           title: "[GOV-PROD] ${{ github.event.pull_request.title }}"
           body: |
-            🔁 This PR was automatically created from #${{ github.event.pull_request.number }}
+            🔁 Auto-created from PR #${{ github.event.pull_request.number }}
 
             ----------------------------------------
-            Original PR Description:
+            Original Description:
             ${{ github.event.pull_request.body }}
           draft: false
