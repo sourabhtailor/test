@@ -1,29 +1,39 @@
-name: Duplicate PR to gov-prod
+name: Sync PR from prod to gov-prod
 
 on:
   pull_request:
-    types: [opened]
+    types: [opened, synchronize, reopened]
     branches:
       - prod
 
 jobs:
-  duplicate-pr:
+  sync-to-gov-prod:
+    if: github.actor != 'github-actions[bot]' &&
+        github.event.pull_request.head.ref != 'gov-prod'
     runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
+    permissions:
+      contents: write
+      pull-requests: write
 
-      - name: Create PR to gov-prod
+    steps:
+      - name: Checkout PR source branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Create or Update PR to gov-prod
+        id: create_pr
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.event.pull_request.head.ref }}
           base: gov-prod
-          branch: ${{ github.head_ref }}
-          title: "[GOV PROD] ${{ github.event.pull_request.title }}"
+          title: ${{ github.event.pull_request.title }}
           body: |
-            This PR was automatically created from #${{ github.event.pull_request.number }}
+            Auto-synced from PR #${{ github.event.pull_request.number }} (target: prod)
 
-            Original PR Description:
-            ------------------------------------
+            ---
             ${{ github.event.pull_request.body }}
+          reviewers: ${{ join(github.event.pull_request.requested_reviewers.*.login, ',') }}
+          draft: false
