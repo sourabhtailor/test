@@ -44,7 +44,7 @@ jobs:
             await github.rest.pulls.create({
               owner,
               repo,
-              title: `[GOV-PROD] ${context.payload.pull_request.title}`,
+              title: `${context.payload.pull_request.title}`,
               head: headBranch,
               base: baseBranch,
               body:
