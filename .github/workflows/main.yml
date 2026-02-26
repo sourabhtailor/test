@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   duplicate-pr:
-    if: github.event.pull_request.base.ref == 'prod'
+   # if: github.event.pull_request.base.ref == 'prod'
     runs-on: ubuntu-latest
 
     steps:
