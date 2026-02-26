@@ -1,4 +1,4 @@
-name: Duplicate prod PR to gov-prod
+name: PR for gov-prod
 
 on:
   pull_request:
@@ -10,7 +10,7 @@ permissions:
   pull-requests: write
 
 jobs:
-  duplicate-pr:
+  pr-for-gov-prod:
     if: github.event.pull_request.base.ref == 'prod'
     runs-on: ubuntu-latest
 
