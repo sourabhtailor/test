@@ -1,31 +1,25 @@
 name: PR for gov-prod
-
 on:
   pull_request:
     types: [opened]
     branches: [prod]
-
 permissions:
   contents: read
   pull-requests: write
-
 jobs:
   pr-for-gov-prod:
-    if: github.event.pull_request.base.ref == 'prod'
     runs-on: ubuntu-latest
-
     steps:
       - name: Create PR to gov-prod
         uses: actions/github-script@v8
         with:
           script: |
             const { owner, repo } = context.repo;
-
             const originalPR = context.payload.pull_request;
             const headBranch = originalPR.head.ref;
             const baseBranch = "gov-prod";
             const author = originalPR.user.login;
-
+            
             // Check if already exists
             const { data: existing } = await github.rest.pulls.list({
               owner,
@@ -34,12 +28,11 @@ jobs:
               head: `${owner}:${headBranch}`,
               base: baseBranch
             });
-
             if (existing.length > 0) {
               console.log("PR already exists for gov-prod.");
               return;
             }
-
+            
             // Create new PR with SAME title & SAME body
             const newPR = await github.rest.pulls.create({
               owner,
@@ -49,7 +42,7 @@ jobs:
               base: baseBranch,
               body: originalPR.body || ""
             });
-
+            
             // Copy labels
             const labels = originalPR.labels.map(l => l.name);
             if (labels.length > 0) {
@@ -57,7 +50,7 @@ jobs:
                 owner, repo, issue_number: newPR.data.number, labels
               });
             }
-
+            
             // Assign original author
             await github.rest.issues.addAssignees({
               owner,
@@ -65,5 +58,21 @@ jobs:
               issue_number: newPR.data.number,
               assignees: [author]
             });
-
+            
+            // Copy individual reviewers
+            const reviewers = originalPR.requested_reviewers.map(r => r.login);
+            const teamReviewers = originalPR.requested_teams.map(t => t.slug);
+            if (reviewers.length > 0 || teamReviewers.length > 0) {
+              await github.rest.pulls.requestReviewers({
+                owner,
+                repo,
+                pull_number: newPR.data.number,
+                reviewers: reviewers,
+                team_reviewers: teamReviewers
+              });
+              console.log(`Reviewers assigned: ${reviewers.join(", ") || "none"}`);
+              console.log(`Team reviewers assigned: ${teamReviewers.join(", ") || "none"}`);
+            } else {
+              console.log("No reviewers found on original PR.");
+            }
             console.log("gov-prod PR created with same data.");
