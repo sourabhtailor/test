@@ -1,0 +1,103 @@
+name: PR for gov-prod
+on:
+  pull_request:
+    types: [opened]
+    branches: [master]
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+jobs:
+  pr-for-gov-prod:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create PR to gov-prod
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const originalPR = context.payload.pull_request;
+            const headBranch = originalPR.head.ref;
+            const baseBranch = "gov-prod";
+            const author = originalPR.user.login;
+            
+            // Check if already exists
+            const { data: existing } = await github.rest.pulls.list({
+              owner,
+              repo,
+              state: "open",
+              head: `${owner}:${headBranch}`,
+              base: baseBranch
+            });
+            if (existing.length > 0) {
+              console.log("PR already exists for gov-prod.");
+              return;
+            }
+            
+            // Create new PR with SAME title & SAME body
+            const newPR = await github.rest.pulls.create({
+              owner,
+              repo,
+              title: originalPR.title,
+              head: headBranch,
+              base: baseBranch,
+              body: originalPR.body || ""
+            });
+            
+            console.log(`PR #${newPR.data.number} created for gov-prod.`);
+
+            // Copy Labels (non-critical)
+            try {
+              const labels = originalPR.labels.map(l => l.name);
+              if (labels.length > 0) {
+                await github.rest.issues.addLabels({
+                  owner,
+                  repo,
+                  issue_number: newPR.data.number,
+                  labels
+                });
+                console.log("Labels copied successfully.");
+              }
+            } catch (error) {
+              console.log("Failed to copy labels:", error.message);
+            }
+
+            // Assign Author (non-critical)
+            
+            try {
+              await github.rest.issues.addAssignees({
+                owner,
+                repo,
+                issue_number: newPR.data.number,
+                assignees: [author]
+              });
+              console.log("Author assigned successfully.");
+            } catch (error) {
+              console.log("Failed to assign author:", error.message);
+            }
+
+            // Copy Reviewers (non-critical)
+
+            try {
+              const reviewers = originalPR.requested_reviewers.map(r => r.login);
+              const teamReviewers = originalPR.requested_teams.map(t => t.slug);
+
+              if (reviewers.length > 0 || teamReviewers.length > 0) {
+                await github.rest.pulls.requestReviewers({
+                  owner,
+                  repo,
+                  pull_number: newPR.data.number,
+                  reviewers,
+                  team_reviewers: teamReviewers
+                });
+
+                console.log(`Reviewers assigned: ${reviewers.join(", ") || "none"}`);
+                console.log(`Team reviewers assigned: ${teamReviewers.join(", ") || "none"}`);
+              } else {
+                console.log("No reviewers found on original PR.");
+              }
+            } catch (error) {
+              console.log("Failed to assign reviewers:", error.message);
+            }
+
+            console.log("gov-prod PR created with same data.");
