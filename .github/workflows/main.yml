@@ -41,8 +41,14 @@ jobs:
               title: originalPR.title,
               head: headBranch,
               base: baseBranch,
-              body: originalPR.body || ""
-            });
+              body: `
+                      ${originalPR.body || ""}
+                      
+                      ---
+                      
+                      🔹 **Original PR Author:** @${author}
+                      `
+                                  });
             
             console.log(`PR #${newPR.data.number} created for gov-prod.`);
 
@@ -60,20 +66,6 @@ jobs:
               }
             } catch (error) {
               console.log("Failed to copy labels:", error.message);
-            }
-
-            // Assign Author (non-critical)
-            
-            try {
-              await github.rest.issues.addAssignees({
-                owner,
-                repo,
-                issue_number: newPR.data.number,
-                assignees: [author]
-              });
-              console.log("Author assigned successfully.");
-            } catch (error) {
-              console.log("Failed to assign author:", error.message);
             }
 
             // Copy Reviewers (non-critical)
