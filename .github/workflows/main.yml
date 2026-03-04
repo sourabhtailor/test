@@ -2,7 +2,7 @@ name: PR for gov-prod
 on:
   pull_request:
     types: [opened]
-    branches: [Prod-8]
+    branches: [prod]
 permissions:
   contents: read
   pull-requests: write
