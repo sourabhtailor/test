@@ -46,7 +46,7 @@ jobs:
                       
                       ---
                       
-                      🔹 **Original PR Author:** @${author}
+                        **Original PR Author:** @${author}
                       `
                                   });
             
